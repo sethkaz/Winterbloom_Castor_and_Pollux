@@ -8,15 +8,27 @@
 
 #include "fix16.h"
 #include "gem_config.h"
-#include "gem_voice_params.h"
 #include "wntr_smoothie.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 /* The core logic for updating Gemini's oscillators based on external input. */
 
+struct GemOscillatorInputs {
+    uint32_t* adc;
+    fix16_t lfo_pitch;
+    fix16_t lfo_pulse_width;
+};
+
+struct GemOscillatorOutputs {
+    fix16_t pitch_cv;
+    uint32_t period;
+    uint16_t ramp_cv;
+};
+
 struct GemOscillator {
     /* Configuration */
+    uint8_t number;
     enum GemADCChannels pitch_cv_channel;
     enum GemADCChannels pitch_knob_channel;
     enum GemADCChannels pulse_width_cv_channel;
@@ -28,7 +40,7 @@ struct GemOscillator {
     bool lfo_pwm;
 
     /* State */
-    struct GemVoiceParams params;
+    struct GemOscillatorOutputs outputs;
     struct WntrSmoothie smooth;
     fix16_t pitch_knob;
     fix16_t pitch_cv;
@@ -38,15 +50,11 @@ struct GemOscillator {
     uint16_t pulse_width;
 };
 
-struct GemOscillatorInputs {
-    uint32_t* adc;
-    fix16_t lfo_pitch;
-    fix16_t lfo_pulse_width;
-};
-
 void gem_oscillator_init(struct GemADCErrors pitch_cv_adc_errors, fix16_t pitch_knob_nonlinearity);
+
 void GemOscillator_init(
     struct GemOscillator* osc,
+    uint8_t number,
     enum GemADCChannels pitch_cv_channel,
     enum GemADCChannels pitch_knob_channel,
     enum GemADCChannels pulse_width_cv_channel,
@@ -58,4 +66,7 @@ void GemOscillator_init(
     bool lfo_pwm);
 
 void GemOscillator_update(struct GemOscillator* osc, struct GemOscillatorInputs inputs);
+
 void GemOscillator_post_update(struct GemOscillator* osc, struct GemOscillatorInputs inputs);
+
+void GemOscillatorOutputs_calculate(uint8_t osc, fix16_t pitch_cv, struct GemOscillatorOutputs* out);
